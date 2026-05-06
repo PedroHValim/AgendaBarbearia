@@ -2775,7 +2775,7 @@ function selectDate(el, date) {
   document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
   el.classList.add('selected');
   booking.date    = date;
-  booking.dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD para a API
+  booking.dateStr = formatDateISO(date); // YYYY-MM-DD para a API
   document.getElementById('btn-step3').disabled = false;
 }
 
@@ -3412,7 +3412,7 @@ async function submitNewBarber() {
 
 // ──── ADMIN: CARREGAR AGENDA DO DIA ────
 async function loadAdminAgenda() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateISO(new Date());
   const dateLabel = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
 
   // Atualiza label de data na agenda
@@ -3488,8 +3488,12 @@ function getWeekStart(offset = 0) {
   return d;
 }
 
+// Usa horário local em vez de UTC para evitar offset de timezone
 function formatDateISO(date) {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 async function loadWeekAgenda() {
