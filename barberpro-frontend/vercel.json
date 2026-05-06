@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/barbearia.html" }
+    { "source": "/", "destination": "/barbearia.html" },
+    { "source": "/(.*)", "destination": "/barbearia.html" }
   ]
 }
