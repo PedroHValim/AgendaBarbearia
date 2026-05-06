@@ -2293,9 +2293,10 @@ function authHeaders() {
 // ──── API HELPER ────
 async function api(path, options = {}) {
   try {
+    const { headers: optHeaders, ...restOptions } = options;
     const res = await fetch(API_URL + path, {
-      headers: { 'Content-Type': 'application/json', ...options.headers },
-      ...options,
+      headers: { 'Content-Type': 'application/json', ...optHeaders },
+      ...restOptions,
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
