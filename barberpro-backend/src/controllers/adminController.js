@@ -197,23 +197,42 @@ async function unblockSlot(req, res) {
 
 // ── ADICIONAR ENCAIXE ────────────────────────────────
 async function addWalkIn(req, res) {
-  const { client_name, client_phone, service_id, barber_id, date, time } = req.body;
+  const { client_name, client_phone, service_id, barber_id, date, time, existing_client_id } = req.body;
 
   try {
-    // Cria ou busca cliente pelo telefone
-    const cleanPhone = client_phone.replace(/\D/g, '');
-    let { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('phone', cleanPhone)
-      .single();
+    let user = null;
 
+    // Se veio um existing_client_id, usa direto
+    if (existing_client_id) {
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', existing_client_id)
+        .single();
+      user = existingUser;
+    }
+
+    // Se não, busca ou cria pelo telefone
+    if (!user && client_phone) {
+      const cleanPhone = client_phone.replace(/\D/g, '');
+      if (cleanPhone.length >= 10) {
+        let { data: foundUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('phone', cleanPhone)
+          .single();
+        user = foundUser;
+      }
+    }
+
+    // Se ainda não achou, cria novo usuário
     if (!user) {
+      const cleanPhone = client_phone ? client_phone.replace(/\D/g, '') : null;
       const { data: newUser } = await supabase
         .from('users')
         .insert({
           name: client_name,
-          phone: cleanPhone,
+          phone: cleanPhone || null,
           role: 'client',
           auth_provider: 'walkin',
           is_active: true,
@@ -322,6 +341,39 @@ async function markNotificationRead(req, res) {
   }
 }
 
+// ── BUSCAR CLIENTE POR EMAIL OU TELEFONE ─────────────
+async function searchClient(req, res) {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: 'Parâmetro q obrigatório' });
+
+  const cleanQ = q.trim();
+  const isPhone = /^\d+$/.test(cleanQ.replace(/\D/g, '')) && cleanQ.replace(/\D/g, '').length >= 10;
+
+  try {
+    let query = supabase
+      .from('users')
+      .select('id, name, email, phone')
+      .eq('is_active', true);
+
+    if (isPhone) {
+      const digits = cleanQ.replace(/\D/g, '');
+      query = query.eq('phone', digits);
+    } else {
+      query = query.ilike('email', `%${cleanQ}%`);
+    }
+
+    const { data, error } = await query.single();
+
+    if (error || !data) {
+      return res.json({ user: null });
+    }
+
+    return res.json({ user: data });
+  } catch (err) {
+    return res.json({ user: null });
+  }
+}
+
 module.exports = {
   getDashboard,
   getAgenda,
@@ -330,6 +382,7 @@ module.exports = {
   blockSlot,
   unblockSlot,
   addWalkIn,
+  searchClient,
   getSettings,
   updateSettings,
   getAdminNotifications,

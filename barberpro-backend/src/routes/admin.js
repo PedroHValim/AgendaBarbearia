@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   getDashboard, getAgenda,
   adminCancelAppointment, completeAppointment,
-  blockSlot, unblockSlot, addWalkIn,
+  blockSlot, unblockSlot, addWalkIn, searchClient,
   getSettings, updateSettings,
   getAdminNotifications, markNotificationRead,
 } = require('../controllers/adminController');
@@ -14,6 +14,7 @@ router.use(authenticate, requireAdmin);
 
 router.get('/dashboard', getDashboard);
 router.get('/agenda', getAgenda);
+router.get('/search-client', searchClient);
 router.patch('/appointments/:id/cancel', adminCancelAppointment);
 router.patch('/appointments/:id/complete', completeAppointment);
 router.post('/blocked-slots', blockSlot);

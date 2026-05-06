@@ -2121,18 +2121,35 @@
 <div class="modal-backdrop hidden" id="modal-encaixe">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">➕ Adicionar Encaixe</div>
+      <div class="modal-title">➕ Agendar para cliente</div>
       <div class="modal-close" onclick="closeModal('modal-encaixe')">×</div>
     </div>
     <div class="modal-body">
+
+      <!-- Busca de cliente -->
       <div class="form-group">
-        <label>Nome do cliente</label>
-        <input type="text" placeholder="Nome completo" id="walkin-name">
+        <label>Buscar cliente por e-mail ou telefone</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" placeholder="email@cliente.com ou (11) 99999-9999" id="walkin-search" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="searchWalkInClient()" style="white-space:nowrap">Buscar</button>
+        </div>
       </div>
-      <div class="form-group">
-        <label>WhatsApp</label>
-        <input type="tel" placeholder="(11) 99999-9999" id="walkin-phone">
+
+      <!-- Resultado da busca -->
+      <div id="walkin-search-result" class="hidden" style="margin-bottom:16px;padding:12px;border-radius:var(--radius-md);border:1px solid var(--dark4);font-size:13px"></div>
+
+      <!-- Campos do cliente (mostrados após busca) -->
+      <div id="walkin-client-fields">
+        <div class="form-group">
+          <label>Nome do cliente</label>
+          <input type="text" placeholder="Nome completo" id="walkin-name">
+        </div>
+        <div class="form-group">
+          <label>WhatsApp</label>
+          <input type="tel" placeholder="(11) 99999-9999" id="walkin-phone">
+        </div>
       </div>
+
       <div class="form-group">
         <label>Serviço</label>
         <select id="walkin-service-id">
@@ -2158,7 +2175,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-encaixe')">Cancelar</button>
-      <button class="btn btn-primary" onclick="submitWalkIn()">Adicionar</button>
+      <button class="btn btn-primary" onclick="submitWalkIn()">Agendar</button>
     </div>
   </div>
 </div>
@@ -3113,6 +3130,16 @@ function openModal(id) {
 }
 function closeModal(id) {
   document.getElementById(id).classList.add('hidden');
+  // Reseta o modal de encaixe ao fechar
+  if (id === 'modal-encaixe') {
+    ['walkin-search','walkin-name','walkin-phone','walkin-date','walkin-time'].forEach(fid => {
+      const el = document.getElementById(fid);
+      if (el) { el.value = ''; el.disabled = false; }
+    });
+    const r = document.getElementById('walkin-search-result');
+    if (r) r.classList.add('hidden');
+    walkinFoundUser = null;
+  }
 }
 document.querySelectorAll('.modal-backdrop').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); });
@@ -3239,6 +3266,7 @@ function updateAccountAvatar() {
 
 // ──── ADMIN: variável de contexto ────
 let adminCancelTargetId = null;
+let walkinFoundUser = null; // cliente encontrado na busca do encaixe
 
 // Abre modal de cancelar com ID do agendamento
 function openCancelModal(appointmentId) {
@@ -3308,6 +3336,72 @@ async function submitBlockSlot() {
   }
 }
 
+// ──── ADMIN: BUSCA CLIENTE PARA ENCAIXE ────
+async function searchWalkInClient() {
+  const search = document.getElementById('walkin-search')?.value?.trim();
+  const resultDiv = document.getElementById('walkin-search-result');
+  const clientFields = document.getElementById('walkin-client-fields');
+
+  if (!search) {
+    showToast('Digite um e-mail ou telefone para buscar', 'error');
+    return;
+  }
+
+  const btn = document.querySelector('#modal-encaixe .btn-ghost');
+  setLoading(btn, true);
+  walkinFoundUser = null;
+
+  try {
+    const data = await api(`/admin/search-client?q=${encodeURIComponent(search)}`, {
+      headers: authHeaders(),
+    });
+
+    if (data.user) {
+      walkinFoundUser = data.user;
+      resultDiv.className = resultDiv.className.replace('hidden', '');
+      resultDiv.style.borderColor = 'var(--green)';
+      resultDiv.style.background = 'rgba(39,174,96,0.06)';
+      resultDiv.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--green);font-size:16px">✓</span>
+          <div>
+            <div style="font-weight:600;color:var(--white)">${data.user.name}</div>
+            <div style="color:var(--gray2);font-size:12px">${data.user.email || ''} ${data.user.phone ? '· ' + data.user.phone : ''}</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--green);margin-top:6px">Conta encontrada — agendamento será vinculado a este cliente</div>`;
+
+      // Preenche os campos com os dados do cliente e desabilita
+      const nameEl = document.getElementById('walkin-name');
+      const phoneEl = document.getElementById('walkin-phone');
+      if (nameEl) { nameEl.value = data.user.name; nameEl.disabled = true; }
+      if (phoneEl) { phoneEl.value = data.user.phone || ''; phoneEl.disabled = true; }
+
+    } else {
+      resultDiv.className = resultDiv.className.replace('hidden', '');
+      resultDiv.style.borderColor = 'var(--gold)';
+      resultDiv.style.background = 'rgba(201,168,76,0.06)';
+      resultDiv.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:var(--gold);font-size:16px">⚠</span>
+          <div style="color:var(--gray2)">Cliente não encontrado. Preencha os dados abaixo para criar o agendamento sem conta vinculada.</div>
+        </div>`;
+
+      // Limpa e habilita os campos
+      const nameEl = document.getElementById('walkin-name');
+      const phoneEl = document.getElementById('walkin-phone');
+      if (nameEl) { nameEl.value = ''; nameEl.disabled = false; }
+      if (phoneEl) { phoneEl.value = ''; phoneEl.disabled = false; }
+    }
+
+    resultDiv.classList.remove('hidden');
+  } catch (err) {
+    showToast('Erro ao buscar cliente', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
 // ──── ADMIN: ENCAIXE ────
 async function submitWalkIn() {
   const client_name  = document.getElementById('walkin-name')?.value?.trim();
@@ -3317,29 +3411,44 @@ async function submitWalkIn() {
   const date         = document.getElementById('walkin-date')?.value;
   const time         = document.getElementById('walkin-time')?.value;
 
-  if (!client_name || !client_phone || !service_id || !barber_id || !date || !time) {
+  if (!client_name || !service_id || !barber_id || !date || !time) {
     showToast('Preencha todos os campos', 'error'); return;
-  }
-  if (!validatePhone(client_phone)) {
-    showToast('WhatsApp inválido. Use: (11) 99999-9999', 'error'); return;
   }
 
   const btn = document.querySelector('#modal-encaixe .btn-primary');
   setLoading(btn, true);
 
   try {
+    const body = {
+      service_id, barber_id, date, time,
+      client_name,
+      client_phone: client_phone || '',
+    };
+
+    // Se encontrou um usuário existente, envia o ID para vincular
+    if (walkinFoundUser) {
+      body.existing_client_id = walkinFoundUser.id;
+    }
+
     await api('/admin/walk-in', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ client_name, client_phone, service_id, barber_id, date, time }),
+      body: JSON.stringify(body),
     });
+
     closeModal('modal-encaixe');
-    showToast('Encaixe adicionado com sucesso!', 'success');
-    // Limpa campos
-    ['walkin-name','walkin-phone','walkin-date','walkin-time'].forEach(id => {
+    showToast('Agendamento criado com sucesso!', 'success');
+
+    // Limpa tudo
+    ['walkin-search','walkin-name','walkin-phone','walkin-date','walkin-time'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.value = '';
+      if (el) { el.value = ''; el.disabled = false; }
     });
+    const resultDiv = document.getElementById('walkin-search-result');
+    if (resultDiv) resultDiv.classList.add('hidden');
+    walkinFoundUser = null;
+
+    loadAdminAgenda();
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
@@ -3413,6 +3522,7 @@ async function submitNewBarber() {
 
 // ──── ADMIN: CARREGAR AGENDA DO DIA ────
 async function loadAdminAgenda() {
+  if (!getToken()) return;
   const today = formatDateISO(new Date());
   const dateLabel = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
 
@@ -3502,6 +3612,12 @@ async function loadWeekAgenda() {
   const label     = document.getElementById('week-label');
   if (!container) return;
 
+  // Garante que tem token antes de chamar
+  if (!getToken()) {
+    container.innerHTML = '<div style="text-align:center;color:var(--gray2);padding:40px">Faça login para ver a agenda</div>';
+    return;
+  }
+
   const weekStart = getWeekStart(currentWeekOffset);
   const weekEnd   = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 5); // seg a sab
@@ -3545,6 +3661,7 @@ function renderWeekGrid(appointments, weekStart) {
   });
 
   // Índice de agendamentos por data+hora
+  // Agrupa no slot de hora mais próximo (ex: 15:30 vai para o slot 15:00)
   const apptMap = {};
   appointments.forEach(appt => {
     const timeParts = (appt.time || '00:00:00').split(':');
