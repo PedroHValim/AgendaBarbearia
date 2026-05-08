@@ -136,5 +136,63 @@ async function updateService(req, res) {
 
 module.exports = {
   listBarbers, createBarber, updateBarber, toggleBarberActive,
-  listServices, createService, updateService,
+  listServices, createService, updateService, deleteService,
+  getBarberServices, updateBarberServices,
 };
+
+// ── SERVIÇOS DE UM BARBEIRO ───────────────────────────
+async function getBarberServices(req, res) {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from('barber_services')
+      .select('services(id, name, description, price, duration_minutes)')
+      .eq('barber_id', id);
+    if (error) throw error;
+    const services = data.map(d => d.services).filter(Boolean);
+    return res.json({ services });
+  } catch (err) {
+    return res.status(500).json({ error: 'Erro ao buscar serviços do barbeiro' });
+  }
+}
+
+async function updateBarberServices(req, res) {
+  const { id } = req.params;
+  const { service_ids } = req.body; // array de IDs
+
+  if (!Array.isArray(service_ids)) {
+    return res.status(400).json({ error: 'service_ids deve ser um array' });
+  }
+
+  try {
+    // Remove todos os vínculos atuais
+    await supabase.from('barber_services').delete().eq('barber_id', id);
+
+    // Insere os novos
+    if (service_ids.length > 0) {
+      const inserts = service_ids.map(service_id => ({ barber_id: id, service_id }));
+      const { error } = await supabase.from('barber_services').insert(inserts);
+      if (error) throw error;
+    }
+
+    return res.json({ message: 'Serviços do barbeiro atualizados!' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Erro ao atualizar serviços' });
+  }
+}
+
+// ── CRUD SERVIÇOS (admin) ─────────────────────────────
+async function deleteService(req, res) {
+  const { id } = req.params;
+  try {
+    // Soft delete — desativa em vez de apagar
+    const { error } = await supabase
+      .from('services')
+      .update({ is_active: false })
+      .eq('id', id);
+    if (error) throw error;
+    return res.json({ message: 'Serviço desativado!' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Erro ao desativar serviço' });
+  }
+}

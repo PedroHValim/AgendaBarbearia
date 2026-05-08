@@ -1463,12 +1463,12 @@
       <div class="booking-progress" id="booking-progress">
         <div class="progress-step">
           <div class="progress-dot active" id="dot-1">1</div>
-          <span class="progress-label active">Serviço</span>
+          <span class="progress-label active">Barbeiro</span>
         </div>
         <div class="progress-line" id="line-1"></div>
         <div class="progress-step">
           <div class="progress-dot" id="dot-2">2</div>
-          <span class="progress-label">Barbeiro</span>
+          <span class="progress-label">Serviço</span>
         </div>
         <div class="progress-line" id="line-2"></div>
         <div class="progress-step">
@@ -1490,20 +1490,20 @@
 
     <!-- Step 1: Serviço -->
     <div class="step active" id="step-1">
-      <div class="step-title">Escolha o serviço</div>
-      <p class="step-sub">Selecione o que você quer fazer hoje</p>
-      <div class="service-select-grid" id="service-select-dynamic">
-        <div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Carregando serviços...</div>
+      <div class="step-title">Escolha o barbeiro</div>
+      <p class="step-sub">Com quem você quer ser atendido?</p>
+      <div class="barber-select-grid" id="barber-select-step1">
+        <div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Carregando barbeiros...</div>
       </div>
       <button class="btn btn-primary btn-full" onclick="nextStep(2)" id="btn-step1" disabled>Continuar →</button>
     </div>
 
     <!-- Step 2: Barbeiro -->
     <div class="step" id="step-2">
-      <div class="step-title">Escolha o barbeiro</div>
-      <p class="step-sub">Ou continue sem preferência</p>
-      <div class="barber-select-grid" id="barber-select-dynamic">
-        <div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Carregando barbeiros...</div>
+      <div class="step-title">Escolha o serviço</div>
+      <p class="step-sub" id="step2-barber-label">Serviços disponíveis</p>
+      <div class="service-select-grid" id="service-select-dynamic">
+        <div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Carregando serviços...</div>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-ghost" onclick="nextStep(1)">← Voltar</button>
@@ -1511,7 +1511,7 @@
       </div>
     </div>
 
-    <!-- Step 3: Data -->
+    <!-- Step 3: Data + Horário (unificado) -->
     <div class="step" id="step-3">
       <div class="step-title">Escolha a data</div>
       <p class="step-sub">Próximos 30 dias disponíveis</p>
@@ -1523,22 +1523,24 @@
         </div>
         <div class="calendar-grid" id="calendar-grid"></div>
       </div>
-      <div style="display:flex;gap:10px;">
+
+      <!-- Horários aparecem aqui após selecionar o dia -->
+      <div id="time-slots-section" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:600;color:var(--white)" id="step3-date-label"></div>
+          <div id="day-occupancy-bar" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gray2)"></div>
+        </div>
+        <div class="time-slots" id="time-slots-grid"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:8px">
         <button class="btn btn-ghost" onclick="nextStep(2)">← Voltar</button>
-        <button class="btn btn-primary" style="flex:1" onclick="nextStep(4)" id="btn-step3" disabled>Continuar →</button>
+        <button class="btn btn-primary" style="flex:1" onclick="goToConfirm()" id="btn-step3" disabled>Continuar →</button>
       </div>
     </div>
 
-    <!-- Step 4: Horário -->
-    <div class="step" id="step-4">
-      <div class="step-title">Escolha o horário</div>
-      <p class="step-sub" id="step4-date-label">Horários disponíveis</p>
-      <div class="time-slots" id="time-slots-grid"></div>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-ghost" onclick="nextStep(3)">← Voltar</button>
-        <button class="btn btn-primary" style="flex:1" onclick="goToConfirm()" id="btn-step4" disabled>Continuar →</button>
-      </div>
-    </div>
+    <!-- Step 4: mantido para não quebrar referências, redireciona para step 3 -->
+    <div class="step" id="step-4" style="display:none!important"></div>
 
     <!-- Step 5: Confirmar -->
     <div class="step" id="step-5">
@@ -1792,7 +1794,7 @@
             <div class="card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
                 <div style="font-size:15px;font-weight:600;color:var(--white)">Próximos clientes</div>
-                <span class="tag tag-gold">Hoje • 05 Mai</span>
+                <span class="tag tag-gold" id="dash-today-tag">Hoje</span>
               </div>
               <table class="agenda-table">
                 <thead>
@@ -1821,22 +1823,9 @@
                 </div>
               </div>
               <div class="card">
-                <div style="font-size:13px;font-weight:600;color:var(--white);margin-bottom:12px">Slots de hoje</div>
-                <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
-                  <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="color:var(--gray2)">09:00 — 12:00</span>
-                    <span class="tag tag-gray">3 concluídos</span>
-                  </div>
-                  <div class="divider" style="margin:6px 0"></div>
-                  <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="color:var(--gray2)">14:00 — 18:00</span>
-                    <span class="tag tag-gold">5 agendados</span>
-                  </div>
-                  <div class="divider" style="margin:6px 0"></div>
-                  <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="color:var(--gray2)">18:00 — 20:00</span>
-                    <span class="tag tag-green">4 livres</span>
-                  </div>
+                <div style="font-size:13px;font-weight:600;color:var(--white);margin-bottom:12px">Resumo de hoje</div>
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:12px" id="dash-summary">
+                  <div style="text-align:center;color:var(--gray2);padding:10px">Carregando...</div>
                 </div>
               </div>
             </div>
@@ -2071,6 +2060,40 @@
             <button class="btn btn-ghost" onclick="loadConfigSettings()">Descartar</button>
             <button class="btn btn-primary" onclick="saveConfigSettings()">Salvar configurações</button>
           </div>
+
+          <!-- SEÇÃO: Serviços -->
+          <div class="config-section" style="margin-top:20px">
+            <div class="config-section-header"><span class="icon">✂</span> Serviços da Barbearia</div>
+            <div class="config-body">
+              <div id="services-config-list">
+                <div style="text-align:center;color:var(--gray2);padding:20px">Carregando...</div>
+              </div>
+              <div class="divider"></div>
+              <!-- Form de edição/criação -->
+              <div id="svc-edit-form" class="hidden" style="padding:16px;background:var(--dark3);border-radius:var(--radius-md);margin-bottom:12px">
+                <input type="hidden" id="svc-edit-id">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+                  <div class="form-group" style="margin:0">
+                    <label>Nome</label>
+                    <input type="text" id="svc-edit-name" placeholder="Ex: Corte">
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label>Preço (R$)</label>
+                    <input type="number" id="svc-edit-price" placeholder="45.00" step="0.01">
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label>Duração (min)</label>
+                    <input type="number" id="svc-edit-duration" placeholder="30">
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button class="btn btn-ghost btn-sm" onclick="document.getElementById('svc-edit-form').classList.add('hidden')">Cancelar</button>
+                  <button class="btn btn-primary btn-sm" onclick="saveServiceEdit()">Salvar</button>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="editService('','','','')">+ Novo serviço</button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -2224,6 +2247,48 @@
   </div>
 </div>
 
+<!-- MODAL: Reagendar -->
+<div class="modal-backdrop hidden" id="modal-reschedule">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">✏ Alterar agendamento</div>
+      <div class="modal-close" onclick="closeModal('modal-reschedule')">×</div>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: Barbeiro -->
+      <div id="rs-step-barber">
+        <div style="font-size:13px;font-weight:500;color:var(--gray2);margin-bottom:12px">Escolha o barbeiro</div>
+        <div class="barber-select-grid" id="rs-barber-grid" style="margin-bottom:0"></div>
+      </div>
+      <!-- Step 2: Serviço -->
+      <div id="rs-step-service" class="hidden">
+        <div style="font-size:13px;font-weight:500;color:var(--gray2);margin-bottom:12px" id="rs-service-label">Escolha o serviço</div>
+        <div class="service-select-grid" id="rs-service-grid" style="margin-bottom:0"></div>
+      </div>
+      <!-- Step 3: Data + Horário -->
+      <div id="rs-step-datetime" class="hidden">
+        <div style="font-size:13px;font-weight:500;color:var(--gray2);margin-bottom:12px">Escolha a data e horário</div>
+        <div class="calendar-wrap" style="margin-bottom:16px">
+          <div class="calendar-nav">
+            <button class="cal-btn" onclick="rsPrevMonth()">‹</button>
+            <div class="calendar-month" id="rs-cal-month"></div>
+            <button class="cal-btn" onclick="rsNextMonth()">›</button>
+          </div>
+          <div class="calendar-grid" id="rs-calendar-grid"></div>
+        </div>
+        <div id="rs-slots-section" class="hidden">
+          <div style="font-size:13px;color:var(--gray2);margin-bottom:8px" id="rs-date-label"></div>
+          <div class="time-slots" id="rs-time-slots"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="rs-btn-back" onclick="rsBack()">← Voltar</button>
+      <button class="btn btn-primary" id="rs-btn-next" onclick="rsNext()" disabled>Continuar →</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop hidden" id="modal-admin-login">
   <div class="modal">
     <div class="modal-header">
@@ -2272,7 +2337,7 @@
 // ══════════════════════════════════════════════════════
 
 // ──── CONFIGURAÇÃO ────
-const API_URL = 'https://agendadigitalbarbearia.onrender.com/api'; // troque pela URL de produção quando publicar
+const API_URL = 'https://agendadigitalbarbearia.onrender.com/api'; 
 
 // ──── STATE ────
 const booking = {
@@ -2625,6 +2690,7 @@ async function startBooking() {
 
   // Carrega serviços e barbeiros da API
   await loadServicesAndBarbers();
+  renderBarberStep1();
 }
 
 async function loadServicesAndBarbers() {
@@ -2789,12 +2855,26 @@ function generateCalendar() {
   }
 }
 
-function selectDate(el, date) {
+async function selectDate(el, date) {
   document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
   el.classList.add('selected');
   booking.date    = date;
-  booking.dateStr = formatDateISO(date); // YYYY-MM-DD para a API
-  document.getElementById('btn-step3').disabled = false;
+  booking.dateStr = formatDateISO(date);
+  booking.time    = '';
+  document.getElementById('btn-step3').disabled = true;
+
+  // Mostra seção de horários
+  const section = document.getElementById('time-slots-section');
+  const label   = document.getElementById('step3-date-label');
+  if (section) section.classList.remove('hidden');
+  if (label) label.textContent = date.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+
+  // Carrega slots e barra de ocupação
+  const barberId = booking.barberId === 'any' ? apiBarbers[0]?.id : booking.barberId;
+  await Promise.all([
+    loadTimeSlots(),
+    loadDayOccupancy(booking.dateStr, barberId),
+  ]);
 }
 
 function prevMonth() {
@@ -2850,10 +2930,10 @@ function renderTimeSlots(slots) {
       el.classList.add('taken');
     } else {
       el.addEventListener('click', () => {
-        document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+        document.querySelectorAll('#time-slots-grid .time-slot').forEach(s => s.classList.remove('selected'));
         el.classList.add('selected');
         booking.time = slot.time;
-        document.getElementById('btn-step4').disabled = false;
+        document.getElementById('btn-step3').disabled = false;
       });
     }
     grid.appendChild(el);
@@ -2964,6 +3044,11 @@ function renderMyAppointments(appointments) {
     const st  = statusLabels[appt.status]  || { text: appt.status, cls: 'tag-gray' };
     const cf  = confirmLabels[appt.confirmation_status] || { text: '', cls: 'tag-gray' };
     const isUpcoming = appt.status === 'scheduled';
+    // Trava de 24h — só permite alterar se faltam mais de 24h
+    const apptDateTime = new Date(`${appt.date}T${appt.time}`);
+    const hoursUntil = (apptDateTime - new Date()) / (1000 * 60 * 60);
+    const canEdit = isUpcoming && hoursUntil > 24;
+    const canCancel = isUpcoming && hoursUntil > 2;
 
     return `
       <div class="appt-card" id="appt-${appt.id}">
@@ -2974,13 +3059,15 @@ function renderMyAppointments(appointments) {
         <div class="appt-bottom">
           <div class="appt-meta">
             <span class="appt-meta-item">📅 ${dateFormatted}</span>
-            <span class="appt-meta-item">⏰ ${appt.time}</span>
+            <span class="appt-meta-item">⏰ ${(appt.time||'').slice(0,5)}</span>
             <span class="appt-meta-item">✂ ${appt.barbers?.name || ''}</span>
             ${isUpcoming ? `<span class="tag ${cf.cls}" style="font-size:10px">${cf.text}</span>` : ''}
           </div>
           <div class="appt-actions">
             ${isUpcoming && appt.confirmation_status === 'pending' ? `<button class="btn btn-outline btn-sm" onclick="confirmPresence('${appt.id}', this)">Confirmar presença</button>` : ''}
-            ${isUpcoming ? `<button class="btn btn-danger btn-sm" onclick="cancelAppt('${appt.id}', this)">Cancelar</button>` : ''}
+            ${canEdit ? `<button class="btn btn-ghost btn-sm" onclick="openReschedule('${appt.id}','${appt.barbers?.id}','${appt.services?.id}')">✏ Alterar</button>` : ''}
+            ${canCancel ? `<button class="btn btn-danger btn-sm" onclick="cancelAppt('${appt.id}', this)">Cancelar</button>` : ''}
+            ${isUpcoming && !canCancel ? `<span style="font-size:11px;color:var(--gray2)">Menos de 2h</span>` : ''}
           </div>
         </div>
       </div>`;
@@ -3113,8 +3200,9 @@ function switchAdminTab(tab, el) {
   const titles = { dashboard:'Dashboard', agenda:'Agenda', notifs:'Notificações', barbers:'Barbeiros', config:'Configurações' };
   document.getElementById('admin-tab-title').textContent = titles[tab] || tab;
   // Carrega dados ao entrar nas abas
-  if (tab === 'config') loadConfigSettings();
+  if (tab === 'config') { loadConfigSettings(); loadServicesConfig(); }
   if (tab === 'notifs') loadAdminNotifications();
+  if (tab === 'barbers') loadBarbersManage();
 }
 
 function setAgendaView(v) {
@@ -3197,18 +3285,20 @@ window.nextStep = function(n) {
   updateProgress(n);
   currentStep = n;
 
-  if (n === 3) generateCalendar();
+  if (n === 2) {
+    // Carrega serviços do barbeiro escolhido
+    booking.serviceId = ''; booking.service = '';
+    document.getElementById('btn-step2').disabled = true;
+    loadBarberServices();
+  }
 
-  if (n === 4) {
-    if (booking.date) {
-      const label = booking.date.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
-      document.getElementById('step4-date-label').textContent = label;
-    }
-    // Reseta seleção de horário
+  if (n === 3) {
+    generateCalendar();
+    // Reseta slots
     booking.time = '';
-    document.getElementById('btn-step4').disabled = true;
-    // Busca horários na API
-    loadTimeSlots();
+    document.getElementById('btn-step3').disabled = true;
+    const section = document.getElementById('time-slots-section');
+    if (section) section.classList.add('hidden');
   }
 };
 
@@ -3987,6 +4077,487 @@ async function markAllNotifsRead() {
     const counter = document.querySelector('#admin-tab-notifs span');
     if (counter) counter.textContent = '0 não lidas';
     showToast('Todas marcadas como lidas', 'info');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════
+// NOVO FLUXO DE AGENDAMENTO — Barbeiro primeiro
+// ══════════════════════════════════════════════════════════
+
+// Renderiza barbeiros no step 1
+function renderBarberStep1() {
+  const grid = document.getElementById('barber-select-step1');
+  if (!grid) return;
+  grid.innerHTML = apiBarbers.map(b => {
+    const initials = b.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+    return `
+    <div class="barber-opt" onclick="selectBarberStep1(this,'${b.name}','${b.id}')">
+      <div class="barber-opt-avatar">${initials}</div>
+      <div class="barber-opt-name">${b.name}</div>
+      <div class="barber-opt-role">${b.specialty||''} ★${b.rating}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectBarberStep1(el, name, id) {
+  document.querySelectorAll('#barber-select-step1 .barber-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  booking.barberId = id;
+  booking.barber   = name;
+  document.getElementById('btn-step1').disabled = false;
+}
+
+// Quando vai para step 2, carrega serviços do barbeiro selecionado
+async function loadBarberServices() {
+  const grid  = document.getElementById('service-select-dynamic');
+  const label = document.getElementById('step2-barber-label');
+  if (!grid) return;
+
+  if (label) label.textContent = `Serviços de ${booking.barber}`;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Carregando...</div>';
+
+  try {
+    const data = await api(`/barbers/${booking.barberId}/services`);
+    const services = data.services || [];
+
+    if (!services.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Nenhum serviço cadastrado para este barbeiro</div>';
+      return;
+    }
+
+    const icons = { Corte:'✂', Barba:'🪒', Combo:'💈', Premium:'👑' };
+    grid.innerHTML = services.map(s => `
+      <div class="service-opt" onclick="selectService(this,'${s.name}',${s.price},${s.duration_minutes},'${s.id}')">
+        <div class="service-opt-icon">${icons[s.name]||'✂'}</div>
+        <div class="service-opt-name">${s.name}</div>
+        <div class="service-opt-info">${s.duration_minutes} minutos</div>
+        <div class="service-opt-price">R$ ${Number(s.price).toFixed(2).replace('.',',')}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    // fallback com todos os serviços
+    renderServiceOptions();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// BARRA DE OCUPAÇÃO DO DIA
+// ══════════════════════════════════════════════════════════
+async function loadDayOccupancy(dateStr, barberId) {
+  const bar = document.getElementById('day-occupancy-bar');
+  if (!bar) return;
+
+  try {
+    const data = await api(`/availability?barber_id=${barberId}&date=${dateStr}&service_id=${booking.serviceId}`);
+    const slots = data.slots || [];
+    const total = slots.length;
+    const taken = slots.filter(s => !s.available).length;
+    if (!total) return;
+
+    const pct = Math.round((taken / total) * 100);
+    let color = '#27ae60'; // verde
+    let label = 'Pouco ocupado';
+    if (pct >= 80) { color = '#e74c3c'; label = 'Muito ocupado'; }
+    else if (pct >= 40) { color = '#f39c12'; label = 'Moderado'; }
+
+    bar.innerHTML = `
+      <span>${taken}/${total} horários</span>
+      <div style="width:80px;height:6px;background:var(--dark4);border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.3s"></div>
+      </div>
+      <span style="color:${color}">${label}</span>`;
+  } catch (err) { /* silencia */ }
+}
+
+// ══════════════════════════════════════════════════════════
+// REAGENDAMENTO
+// ══════════════════════════════════════════════════════════
+let rsState = {
+  appointmentId: null,
+  step: 'barber', // barber | service | datetime
+  barberId: null, barberName: '',
+  serviceId: null, serviceName: '', serviceDuration: 0,
+  date: null, dateStr: '', time: '',
+  calYear: null, calMonth: null,
+};
+
+function openReschedule(apptId, currentBarberId, currentServiceId) {
+  rsState = {
+    appointmentId: apptId,
+    step: 'barber',
+    barberId: null, barberName: '',
+    serviceId: null, serviceName: '', serviceDuration: 0,
+    date: null, dateStr: '', time: '',
+    calYear: new Date().getFullYear(),
+    calMonth: new Date().getMonth(),
+  };
+  rsRenderStep();
+  openModal('modal-reschedule');
+}
+
+function rsRenderStep() {
+  const steps = ['rs-step-barber','rs-step-service','rs-step-datetime'];
+  steps.forEach(s => document.getElementById(s)?.classList.add('hidden'));
+  document.getElementById(`rs-step-${rsState.step}`)?.classList.remove('hidden');
+
+  const btnNext = document.getElementById('rs-btn-next');
+  const btnBack = document.getElementById('rs-btn-back');
+
+  btnNext.disabled = true;
+  btnBack.style.display = rsState.step === 'barber' ? 'none' : '';
+
+  if (rsState.step === 'barber') {
+    btnNext.textContent = 'Continuar →';
+    rsRenderBarbers();
+  } else if (rsState.step === 'service') {
+    btnNext.textContent = 'Continuar →';
+    rsLoadServices();
+  } else {
+    btnNext.textContent = '✦ Confirmar alteração';
+    rsGenerateCalendar();
+  }
+}
+
+function rsRenderBarbers() {
+  const grid = document.getElementById('rs-barber-grid');
+  if (!grid) return;
+  grid.innerHTML = apiBarbers.map(b => {
+    const initials = b.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+    return `<div class="barber-opt" onclick="rsSelectBarber(this,'${b.id}','${b.name}')">
+      <div class="barber-opt-avatar">${initials}</div>
+      <div class="barber-opt-name">${b.name}</div>
+      <div class="barber-opt-role">${b.specialty||''} ★${b.rating}</div>
+    </div>`;
+  }).join('');
+}
+
+function rsSelectBarber(el, id, name) {
+  document.querySelectorAll('#rs-barber-grid .barber-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  rsState.barberId = id;
+  rsState.barberName = name;
+  document.getElementById('rs-btn-next').disabled = false;
+}
+
+async function rsLoadServices() {
+  const grid  = document.getElementById('rs-service-grid');
+  const label = document.getElementById('rs-service-label');
+  if (!grid) return;
+  if (label) label.textContent = `Serviços de ${rsState.barberName}`;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Carregando...</div>';
+
+  try {
+    const data = await api(`/barbers/${rsState.barberId}/services`);
+    const services = data.services || [];
+    const icons = { Corte:'✂', Barba:'🪒', Combo:'💈', Premium:'👑' };
+    grid.innerHTML = services.map(s => `
+      <div class="service-opt" onclick="rsSelectService(this,'${s.id}','${s.name}',${s.duration_minutes})">
+        <div class="service-opt-icon">${icons[s.name]||'✂'}</div>
+        <div class="service-opt-name">${s.name}</div>
+        <div class="service-opt-info">${s.duration_minutes} minutos</div>
+        <div class="service-opt-price">R$ ${Number(s.price).toFixed(2).replace('.',',')}</div>
+      </div>`).join('');
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Erro ao carregar serviços</div>';
+  }
+}
+
+function rsSelectService(el, id, name, duration) {
+  document.querySelectorAll('#rs-service-grid .service-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  rsState.serviceId = id;
+  rsState.serviceName = name;
+  rsState.serviceDuration = duration;
+  document.getElementById('rs-btn-next').disabled = false;
+}
+
+function rsGenerateCalendar() {
+  const grid  = document.getElementById('rs-calendar-grid');
+  const label = document.getElementById('rs-cal-month');
+  if (!grid) return;
+
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  label.textContent = `${months[rsState.calMonth]} ${rsState.calYear}`;
+  grid.innerHTML = '';
+
+  ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-header'; h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  const firstDay    = new Date(rsState.calYear, rsState.calMonth, 1).getDay();
+  const daysInMonth = new Date(rsState.calYear, rsState.calMonth+1, 0).getDate();
+  const today       = new Date();
+  const maxDate     = new Date(today.getTime() + 30*86400000);
+
+  for (let i = 0; i < firstDay; i++) {
+    const e = document.createElement('div'); e.className = 'cal-day empty'; grid.appendChild(e);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(rsState.calYear, rsState.calMonth, d);
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    el.textContent = d;
+    const isPast = date < today && date.toDateString() !== today.toDateString();
+    if (isPast || date > maxDate || date.getDay() === 0) {
+      el.classList.add('disabled');
+    } else {
+      if (date.toDateString() === today.toDateString()) el.classList.add('today');
+      el.classList.add('has-slots');
+      el.addEventListener('click', () => rsSelectDate(el, date));
+    }
+    grid.appendChild(el);
+  }
+}
+
+function rsPrevMonth() {
+  rsState.calMonth--;
+  if (rsState.calMonth < 0) { rsState.calMonth = 11; rsState.calYear--; }
+  rsGenerateCalendar();
+}
+function rsNextMonth() {
+  rsState.calMonth++;
+  if (rsState.calMonth > 11) { rsState.calMonth = 0; rsState.calYear++; }
+  rsGenerateCalendar();
+}
+
+async function rsSelectDate(el, date) {
+  document.querySelectorAll('#rs-calendar-grid .cal-day').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  rsState.date    = date;
+  rsState.dateStr = formatDateISO(date);
+  rsState.time    = '';
+  document.getElementById('rs-btn-next').disabled = true;
+
+  // Carrega slots
+  const section = document.getElementById('rs-slots-section');
+  const slotsGrid = document.getElementById('rs-time-slots');
+  const dateLabel = document.getElementById('rs-date-label');
+  section.classList.remove('hidden');
+  if (dateLabel) dateLabel.textContent = date.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+  slotsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:10px">Carregando...</div>';
+
+  try {
+    const data = await api(`/availability?barber_id=${rsState.barberId}&date=${rsState.dateStr}&service_id=${rsState.serviceId}`);
+    const slots = data.slots || [];
+    if (!slots.length) {
+      slotsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:10px">Nenhum horário disponível</div>';
+      return;
+    }
+    slotsGrid.innerHTML = '';
+    slots.forEach(slot => {
+      const el = document.createElement('div');
+      el.className = 'time-slot';
+      el.textContent = slot.time.slice(0,5);
+      if (!slot.available) {
+        el.classList.add('taken');
+      } else {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('#rs-time-slots .time-slot').forEach(s => s.classList.remove('selected'));
+          el.classList.add('selected');
+          rsState.time = slot.time.slice(0,5);
+          document.getElementById('rs-btn-next').disabled = false;
+        });
+      }
+      slotsGrid.appendChild(el);
+    });
+  } catch (err) {
+    slotsGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:10px">Erro ao carregar horários</div>';
+  }
+}
+
+function rsBack() {
+  if (rsState.step === 'service') rsState.step = 'barber';
+  else if (rsState.step === 'datetime') rsState.step = 'service';
+  rsRenderStep();
+}
+
+async function rsNext() {
+  if (rsState.step === 'barber') {
+    rsState.step = 'service';
+    rsRenderStep();
+  } else if (rsState.step === 'service') {
+    rsState.step = 'datetime';
+    rsRenderStep();
+  } else {
+    // Confirma reagendamento
+    const btn = document.getElementById('rs-btn-next');
+    setLoading(btn, true);
+    try {
+      // Cancela o agendamento atual
+      await api(`/appointments/${rsState.appointmentId}/cancel`, {
+        method: 'PATCH', headers: authHeaders(),
+      });
+      // Cria novo agendamento
+      await api('/appointments', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          service_id: rsState.serviceId,
+          barber_id:  rsState.barberId,
+          date:       rsState.dateStr,
+          time:       rsState.time,
+        }),
+      });
+      closeModal('modal-reschedule');
+      showToast('Agendamento alterado com sucesso!', 'success');
+      loadMyAppointments();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// CONFIGURAÇÕES: CRUD de serviços
+// ══════════════════════════════════════════════════════════
+async function loadServicesConfig() {
+  try {
+    const data = await api('/services');
+    const services = data.services || [];
+    const container = document.getElementById('services-config-list');
+    if (!container) return;
+
+    container.innerHTML = services.map(s => `
+      <div class="config-row" id="svc-row-${s.id}">
+        <div class="config-row-left">
+          <div class="config-row-label">${s.name}</div>
+          <div class="config-row-desc">R$ ${Number(s.price).toFixed(2).replace('.',',')} · ${s.duration_minutes} min</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="editService('${s.id}','${s.name}',${s.price},${s.duration_minutes})">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteServiceAdmin('${s.id}')">Remover</button>
+        </div>
+      </div>`).join('');
+  } catch (err) { /* silencia */ }
+}
+
+async function deleteServiceAdmin(id) {
+  if (!confirm('Remover este serviço?')) return;
+  try {
+    await api(`/services/${id}`, { method: 'DELETE', headers: authHeaders() });
+    showToast('Serviço removido!', 'info');
+    loadServicesConfig();
+    await loadServicesAndBarbers();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+function editService(id, name, price, duration) {
+  document.getElementById('svc-edit-id').value = id;
+  document.getElementById('svc-edit-name').value = name;
+  document.getElementById('svc-edit-price').value = price;
+  document.getElementById('svc-edit-duration').value = duration;
+  document.getElementById('svc-edit-form').classList.remove('hidden');
+}
+
+async function saveServiceEdit() {
+  const id       = document.getElementById('svc-edit-id').value;
+  const name     = document.getElementById('svc-edit-name').value.trim();
+  const price    = parseFloat(document.getElementById('svc-edit-price').value);
+  const duration = parseInt(document.getElementById('svc-edit-duration').value);
+
+  if (!name || !price || !duration) { showToast('Preencha todos os campos', 'error'); return; }
+
+  const isNew = !id;
+  try {
+    if (isNew) {
+      await api('/services', { method:'POST', headers:authHeaders(), body:JSON.stringify({ name, price, duration_minutes:duration }) });
+      showToast('Serviço criado!', 'success');
+    } else {
+      await api(`/services/${id}`, { method:'PUT', headers:authHeaders(), body:JSON.stringify({ name, price, duration_minutes:duration }) });
+      showToast('Serviço atualizado!', 'success');
+    }
+    document.getElementById('svc-edit-form').classList.add('hidden');
+    loadServicesConfig();
+    await loadServicesAndBarbers();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════
+// BARBEIROS MANAGE: carrega da API com checkboxes de serviços
+// ══════════════════════════════════════════════════════════
+async function loadBarbersManage() {
+  const grid = document.getElementById('barbers-manage-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:40px">Carregando...</div>';
+
+  try {
+    const [barbersData, servicesData] = await Promise.all([
+      api('/barbers'),
+      api('/services'),
+    ]);
+    const barbers  = barbersData.barbers  || [];
+    const services = servicesData.services || [];
+
+    if (!barbers.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:40px">Nenhum barbeiro cadastrado</div>';
+      return;
+    }
+
+    // Para cada barbeiro, busca seus serviços
+    const barbersWithServices = await Promise.all(
+      barbers.map(async b => {
+        try {
+          const d = await api(`/barbers/${b.id}/services`);
+          return { ...b, services: d.services || [] };
+        } catch { return { ...b, services: [] }; }
+      })
+    );
+
+    grid.innerHTML = barbersWithServices.map(b => {
+      const initials = b.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+      const checkboxes = services.map(s => {
+        const checked = b.services.some(bs => bs.id === s.id) ? 'checked' : '';
+        return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+          <input type="checkbox" ${checked} value="${s.id}" data-barber="${b.id}" onchange="updateBarberService('${b.id}')">
+          ${s.name}
+        </label>`;
+      }).join('');
+
+      return `
+        <div class="barber-manage-card">
+          <div class="barber-manage-head">
+            <div class="barber-opt-avatar" style="width:48px;height:48px">${initials}</div>
+            <div>
+              <div class="barber-manage-name">${b.name}</div>
+              <div class="barber-manage-role">${b.specialty||''}</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray2);margin-bottom:8px">Serviços</div>
+            <div style="display:flex;flex-direction:column;gap:6px">${checkboxes}</div>
+          </div>
+          <div class="divider"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="showToast('Em breve: editar barbeiro','info')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="toggleBarber(this,'${b.name}')">
+              ${b.is_active ? 'Desativar' : 'Ativar'}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:40px">Erro ao carregar</div>`;
+  }
+}
+
+async function updateBarberService(barberId) {
+  const checkboxes = document.querySelectorAll(`input[data-barber="${barberId}"]`);
+  const serviceIds = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+  try {
+    await api(`/barbers/${barberId}/services`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ service_ids: serviceIds }),
+    });
+    showToast('Serviços atualizados!', 'success');
+    await loadServicesAndBarbers();
   } catch (err) {
     showToast(err.message, 'error');
   }
