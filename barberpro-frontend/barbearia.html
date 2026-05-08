@@ -1477,10 +1477,10 @@
         </div>
         <div class="progress-line" id="line-3"></div>
         <div class="progress-step">
-          <div class="progress-dot" id="dot-4">4</div>
-          <span class="progress-label">Horário</span>
+          <div class="progress-dot" id="dot-4" style="display:none">4</div>
+          <span class="progress-label" style="display:none">Horário</span>
         </div>
-        <div class="progress-line" id="line-4"></div>
+        <div class="progress-line" id="line-4" style="display:none"></div>
         <div class="progress-step">
           <div class="progress-dot" id="dot-5">5</div>
           <span class="progress-label">Confirmar</span>
@@ -1495,7 +1495,7 @@
       <div class="barber-select-grid" id="barber-select-step1">
         <div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:20px">Carregando barbeiros...</div>
       </div>
-      <button class="btn btn-primary btn-full" onclick="nextStep(2)" id="btn-step1" disabled>Continuar →</button>
+      <div id="btn-step1" style="display:none"></div>
     </div>
 
     <!-- Step 2: Barbeiro -->
@@ -1507,7 +1507,7 @@
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-ghost" onclick="nextStep(1)">← Voltar</button>
-        <button class="btn btn-primary" style="flex:1" onclick="nextStep(3)" id="btn-step2" disabled>Continuar →</button>
+        <div id="btn-step2" style="display:none"></div>
       </div>
     </div>
 
@@ -2337,7 +2337,7 @@
 // ══════════════════════════════════════════════════════
 
 // ──── CONFIGURAÇÃO ────
-const API_URL = 'https://agendadigitalbarbearia.onrender.com/api'; 
+const API_URL = 'https://agendadigitalbarbearia.onrender.com/api'; // troque pela URL de produção quando publicar
 
 // ──── STATE ────
 const booking = {
@@ -2760,7 +2760,8 @@ function selectService(el, name, price, dur, id) {
   booking.service   = name;
   booking.price     = price;
   booking.duration  = dur;
-  document.getElementById('btn-step1').disabled = false;
+  // Avança automaticamente para data/horário
+  setTimeout(() => nextStep(3), 200);
 }
 
 function selectBarber(el, name, id) {
@@ -4106,7 +4107,8 @@ function selectBarberStep1(el, name, id) {
   el.classList.add('selected');
   booking.barberId = id;
   booking.barber   = name;
-  document.getElementById('btn-step1').disabled = false;
+  // Avança automaticamente para o step de serviços
+  setTimeout(() => nextStep(2), 200);
 }
 
 // Quando vai para step 2, carrega serviços do barbeiro selecionado
