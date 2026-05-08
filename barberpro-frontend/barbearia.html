@@ -1880,7 +1880,7 @@
         <!-- BARBEIROS -->
         <div id="admin-tab-barbers" class="hidden">
           <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
-            <button class="btn btn-primary btn-sm" onclick="openModal('modal-barber')">+ Novo barbeiro</button>
+            <button class="btn btn-primary btn-sm" onclick="openNewBarber()">+ Novo barbeiro</button>
           </div>
           <div class="barber-manage-grid">
             <div class="barber-manage-card">
@@ -2231,18 +2231,22 @@
 <div class="modal-backdrop hidden" id="modal-barber">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">+ Novo Barbeiro</div>
+      <div class="modal-title" id="modal-barber-title">+ Novo Barbeiro</div>
       <div class="modal-close" onclick="closeModal('modal-barber')">×</div>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="edit-barber-id">
       <div class="form-group"><label>Nome completo</label><input type="text" placeholder="Nome do barbeiro" id="new-barber-name"></div>
       <div class="form-group"><label>Especialidade</label><input type="text" placeholder="Ex: Cortes clássicos, Barba..." id="new-barber-specialty"></div>
-      <div class="form-group"><label>E-mail</label><input type="email" placeholder="email@barbeiro.com" id="new-barber-email"></div>
       <div class="form-group"><label>WhatsApp</label><input type="tel" placeholder="(11) 99999-9999" id="new-barber-phone"></div>
+      <div class="form-group">
+        <label>Avaliação (0-5)</label>
+        <input type="number" min="0" max="5" step="0.1" placeholder="4.9" id="new-barber-rating">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-barber')">Cancelar</button>
-      <button class="btn btn-primary" onclick="submitNewBarber()">Cadastrar</button>
+      <button class="btn btn-primary" id="modal-barber-btn" onclick="submitBarberForm()">Cadastrar</button>
     </div>
   </div>
 </div>
@@ -2337,7 +2341,7 @@
 // ══════════════════════════════════════════════════════
 
 // ──── CONFIGURAÇÃO ────
-const API_URL = 'https://agendadigitalbarbearia.onrender.com/api'; // troque pela URL de produção quando publicar
+const API_URL = 'http://localhost:3001/api'; // troque pela URL de produção quando publicar
 
 // ──── STATE ────
 const booking = {
@@ -3577,10 +3581,33 @@ async function submitAdminCancel() {
 }
 
 // ──── ADMIN: NOVO BARBEIRO ────
-async function submitNewBarber() {
+function openEditBarber(id, name, specialty, phone, rating) {
+  document.getElementById('edit-barber-id').value   = id;
+  document.getElementById('new-barber-name').value      = name;
+  document.getElementById('new-barber-specialty').value = specialty;
+  document.getElementById('new-barber-phone').value     = phone;
+  document.getElementById('new-barber-rating').value    = rating;
+  document.getElementById('modal-barber-title').textContent = '✏ Editar Barbeiro';
+  document.getElementById('modal-barber-btn').textContent   = 'Salvar alterações';
+  openModal('modal-barber');
+}
+
+function openNewBarber() {
+  ['edit-barber-id','new-barber-name','new-barber-specialty','new-barber-phone','new-barber-rating'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('modal-barber-title').textContent = '+ Novo Barbeiro';
+  document.getElementById('modal-barber-btn').textContent   = 'Cadastrar';
+  openModal('modal-barber');
+}
+
+async function submitBarberForm() {
+  const id        = document.getElementById('edit-barber-id')?.value;
   const name      = document.getElementById('new-barber-name')?.value?.trim();
   const specialty = document.getElementById('new-barber-specialty')?.value?.trim();
   const phone     = document.getElementById('new-barber-phone')?.value;
+  const rating    = parseFloat(document.getElementById('new-barber-rating')?.value || 5);
 
   if (!name) { showToast('Nome é obrigatório', 'error'); return; }
 
@@ -3588,21 +3615,27 @@ async function submitNewBarber() {
   setLoading(btn, true);
 
   try {
-    await api('/barbers', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ name, specialty, phone }),
-    });
+    if (id) {
+      // Edição
+      await api(`/barbers/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ name, specialty, phone, rating }),
+      });
+      showToast('Barbeiro atualizado!', 'success');
+    } else {
+      // Novo
+      await api('/barbers', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ name, specialty, phone, rating }),
+      });
+      showToast('Barbeiro cadastrado!', 'success');
+    }
     closeModal('modal-barber');
-    showToast('Barbeiro cadastrado!', 'success');
-    // Limpa campos
-    ['new-barber-name','new-barber-specialty','new-barber-email','new-barber-phone'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    // Recarrega lista de barbeiros
     await loadServicesAndBarbers();
     populateAdminSelects();
+    loadBarbersManage();
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
@@ -4536,7 +4569,7 @@ async function loadBarbersManage() {
           </div>
           <div class="divider"></div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="showToast('Em breve: editar barbeiro','info')">Editar</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openEditBarber('${b.id}','${b.name}','${b.specialty||''}','${b.phone||''}',${b.rating||5})">Editar</button>
             <button class="btn btn-danger btn-sm" onclick="toggleBarber(this,'${b.name}')">
               ${b.is_active ? 'Desativar' : 'Ativar'}
             </button>
