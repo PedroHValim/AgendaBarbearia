@@ -1882,64 +1882,8 @@
           <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
             <button class="btn btn-primary btn-sm" onclick="openNewBarber()">+ Novo barbeiro</button>
           </div>
-          <div class="barber-manage-grid">
-            <div class="barber-manage-card">
-              <div class="barber-manage-head">
-                <div class="barber-opt-avatar" style="width:48px;height:48px">MR</div>
-                <div>
-                  <div class="barber-manage-name">Marco Rossini</div>
-                  <div class="barber-manage-role">Barbeiro Sênior</div>
-                </div>
-              </div>
-              <div class="barber-hours">
-                <div class="barber-hour-row"><span class="barber-hour-day">Seg–Sex</span><span class="barber-hour-time">09:00 – 20:00</span></div>
-                <div class="barber-hour-row"><span class="barber-hour-day">Sábado</span><span class="barber-hour-time">09:00 – 18:00</span></div>
-                <div class="barber-hour-row"><span class="barber-hour-day">Domingo</span><span class="barber-hour-off">Folga</span></div>
-              </div>
-              <div class="divider"></div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-ghost btn-sm" style="flex:1" onclick="showToast('Editar Marco Rossini', 'info')">Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="showToast('Marco desativado temporariamente','info')">Desativar</button>
-              </div>
-            </div>
-            <div class="barber-manage-card">
-              <div class="barber-manage-head">
-                <div class="barber-opt-avatar" style="width:48px;height:48px">JS</div>
-                <div>
-                  <div class="barber-manage-name">João Silva</div>
-                  <div class="barber-manage-role">Especialista em Barba</div>
-                </div>
-              </div>
-              <div class="barber-hours">
-                <div class="barber-hour-row"><span class="barber-hour-day">Seg–Sex</span><span class="barber-hour-time">09:00 – 19:00</span></div>
-                <div class="barber-hour-row"><span class="barber-hour-day">Sábado</span><span class="barber-hour-time">10:00 – 17:00</span></div>
-                <div class="barber-hour-row"><span class="barber-hour-day">Domingo</span><span class="barber-hour-off">Folga</span></div>
-              </div>
-              <div class="divider"></div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-ghost btn-sm" style="flex:1" onclick="showToast('Editar João Silva', 'info')">Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="showToast('João desativado temporariamente','info')">Desativar</button>
-              </div>
-            </div>
-            <div class="barber-manage-card">
-              <div class="barber-manage-head">
-                <div class="barber-opt-avatar" style="width:48px;height:48px">LC</div>
-                <div>
-                  <div class="barber-manage-name">Lucas Costa</div>
-                  <div class="barber-manage-role">Cortes Modernos</div>
-                </div>
-              </div>
-              <div class="barber-hours">
-                <div class="barber-hour-row"><span class="barber-hour-day">Ter–Sáb</span><span class="barber-hour-time">11:00 – 20:00</span></div>
-                <div class="barber-hour-row"><span class="barber-hour-day">Segunda</span><span class="barber-hour-off">Folga</span></div>
-                <div class="barber-hour-row"><span class="barber-hour-day">Domingo</span><span class="barber-hour-off">Folga</span></div>
-              </div>
-              <div class="divider"></div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-ghost btn-sm" style="flex:1" onclick="showToast('Editar Lucas Costa', 'info')">Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="showToast('Lucas desativado temporariamente','info')">Desativar</button>
-              </div>
-            </div>
+          <div class="barber-manage-grid" id="barbers-manage-grid">
+            <div style="grid-column:1/-1;text-align:center;color:var(--gray2);padding:40px">Carregando...</div>
           </div>
         </div>
 
@@ -2341,7 +2285,8 @@
 // ══════════════════════════════════════════════════════
 
 // ──── CONFIGURAÇÃO ────
-const API_URL = 'https://agendadigitalbarbearia.onrender.com/api';
+const API_URL = 'https://agendadigitalbarbearia.onrender.com/api'; // troque pela URL de produção quando publicar
+
 // ──── STATE ────
 const booking = {
   serviceId: '', service: '', price: 0, duration: 0,
