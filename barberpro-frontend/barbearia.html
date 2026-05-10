@@ -1853,9 +1853,12 @@
             </div>
           </div>
           <div class="card hidden" id="agenda-week-view">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
               <div style="font-size:14px;font-weight:600;color:var(--white)" id="week-label">Carregando semana...</div>
-              <div style="display:flex;gap:8px">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select id="week-barber-filter" onchange="filterWeekByBarber()" style="width:160px;padding:8px 12px;font-size:12px">
+                  <option value="all">Todos os barbeiros</option>
+                </select>
                 <button class="btn btn-ghost btn-sm" onclick="changeWeek(-1)">← Anterior</button>
                 <button class="btn btn-ghost btn-sm" onclick="changeWeek(1)">Próxima →</button>
               </div>
@@ -3701,7 +3704,9 @@ async function loadWeekAgenda() {
 
   try {
     const data = await api(`/admin/agenda?week_start=${startStr}`, { headers: authHeaders() });
-    renderWeekGrid(data.appointments || [], weekStart);
+    weekAllAppointments = data.appointments || [];
+    populateWeekBarberFilter();
+    renderWeekGrid(weekAllAppointments, weekStart);
   } catch (err) {
     container.innerHTML = '<div style="text-align:center;color:var(--gray2);padding:40px">Erro ao carregar agenda</div>';
   }
@@ -3760,13 +3765,14 @@ function renderWeekGrid(appointments, weekStart) {
 
       let cellContent = '';
       appts.forEach(appt => {
-        const client = (appt.users?.name || 'Cliente').split(' ')[0];
-        const svc    = appt.services?.name || '';
+        const client  = (appt.users?.name || 'Cliente').split(' ')[0];
+        const svc     = appt.services?.name || '';
+        const barber  = (appt.barbers?.name || '').split(' ')[0];
         const isBlocked = appt.status === 'cancelled';
         cellContent += `<div class="week-appt ${isBlocked ? 'blocked' : ''}" 
-          title="${appt.users?.name || ''} — ${svc}" 
+          title="${appt.users?.name || ''} — ${svc} (${appt.barbers?.name || ''})" 
           onclick="openCancelModal('${appt.id}')">
-          ${client} — ${svc}
+          ${client} — ${svc} <span style="opacity:0.6;font-size:10px">(${barber})</span>
         </div>`;
       });
 
@@ -4539,6 +4545,52 @@ async function updateBarberService(barberId) {
   } catch (err) {
     showToast(err.message, 'error');
   }
+}
+
+
+// ──── ADMIN: FILTRO AGENDA SEMANAL ────
+let weekAllAppointments = [];
+let weekCurrentStart    = null;
+
+function populateWeekBarberFilter() {
+  const sel = document.getElementById('week-barber-filter');
+  if (!sel) return;
+  // Pega barbeiros únicos dos agendamentos
+  const barberMap = {};
+  weekAllAppointments.forEach(a => {
+    if (a.barbers?.id) barberMap[a.barbers.id] = a.barbers.name;
+  });
+  // Reconstrói options preservando seleção atual
+  const current = sel.value;
+  sel.innerHTML = '<option value="all">Todos os barbeiros</option>';
+  Object.entries(barberMap).forEach(([id, name]) => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = name.split(' ')[0]; // só primeiro nome
+    sel.appendChild(opt);
+  });
+  // Adiciona barbeiros da lista geral que podem não ter agendamentos nessa semana
+  apiBarbers.forEach(b => {
+    if (!barberMap[b.id]) {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      opt.textContent = b.name.split(' ')[0];
+      sel.appendChild(opt);
+    }
+  });
+  sel.value = current || 'all';
+}
+
+function filterWeekByBarber() {
+  const sel = document.getElementById('week-barber-filter');
+  const filterId = sel?.value || 'all';
+  const weekStart = getWeekStart(currentWeekOffset);
+
+  const filtered = filterId === 'all'
+    ? weekAllAppointments
+    : weekAllAppointments.filter(a => a.barbers?.id === filterId);
+
+  renderWeekGrid(filtered, weekStart);
 }
 
 // ──── INIT ────
