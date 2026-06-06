@@ -1189,6 +1189,9 @@
     max-width: 480px;
     padding: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
   }
   .modal-header {
     padding: 20px 24px;
@@ -1213,7 +1216,7 @@
     transition: all var(--transition);
   }
   .modal-close:hover { border-color: var(--red); color: var(--red); }
-  .modal-body { padding: 24px; }
+  .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
   .modal-footer {
     padding: 16px 24px;
     border-top: 1px solid var(--dark4);
@@ -1320,7 +1323,7 @@
     .appt-actions { width: 100%; justify-content: flex-end; }
 
     /* Modal */
-    .modal { margin: 0 8px; }
+    .modal { margin: 0 8px; max-height: 85vh; }
 
     /* Agenda table scroll */
     .agenda-table-wrap { overflow-x: auto; }
