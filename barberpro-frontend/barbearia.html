@@ -2946,6 +2946,8 @@ async function confirmBooking() {
 }
 
 // ──── MINHA CONTA: AGENDAMENTOS ────
+let _myAppts = [];
+
 async function loadMyAppointments() {
   if (!getToken()) return;
 
@@ -2962,7 +2964,8 @@ async function loadMyAppointments() {
 
   try {
     const data = await api('/appointments/my', { headers: authHeaders() });
-    renderMyAppointments(data.appointments || []);
+    _myAppts = data.appointments || [];
+    renderMyAppointments(_myAppts, false);
   } catch (err) {
     list.innerHTML = '<div style="text-align:center;color:var(--gray2);padding:40px">Erro ao carregar agendamentos</div>';
   }
@@ -2979,7 +2982,7 @@ const confirmLabels = {
   no_show:   { text: 'Não confirmou', cls: 'tag-red' },
 };
 
-function renderMyAppointments(appointments) {
+function renderMyAppointments(appointments, showAll) {
   const list = document.getElementById('client-appt-list');
 
   if (!appointments.length) {
@@ -2993,14 +2996,26 @@ function renderMyAppointments(appointments) {
     return;
   }
 
-  list.innerHTML = appointments.map(appt => {
+  const sorted = [...appointments].sort((a, b) =>
+    new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`)
+  );
+  const displayed = showAll ? sorted : sorted.slice(0, 3);
+  const hasMore = sorted.length > 3;
+
+  list.innerHTML = displayed.map(appt => {
     const dateFormatted = new Date(appt.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
-    const st  = statusLabels[appt.status]  || { text: appt.status, cls: 'tag-gray' };
-    const cf  = confirmLabels[appt.confirmation_status] || { text: '', cls: 'tag-gray' };
-    const isUpcoming = appt.status === 'scheduled';
-    // Trava de 24h — só permite alterar se faltam mais de 24h
     const apptDateTime = new Date(`${appt.date}T${appt.time}`);
     const hoursUntil = (apptDateTime - new Date()) / (1000 * 60 * 60);
+    const isPast = hoursUntil < 0;
+    const isUpcoming = appt.status === 'scheduled' && !isPast;
+    const isPastScheduled = appt.status === 'scheduled' && isPast;
+
+    const st = isPastScheduled
+      ? { text: 'Realizado', cls: 'tag-green' }
+      : (statusLabels[appt.status] || { text: appt.status, cls: 'tag-gray' });
+    const cf = confirmLabels[appt.confirmation_status] || { text: '', cls: 'tag-gray' };
+
+    // Trava de 24h — só permite alterar se faltam mais de 24h
     const canEdit = isUpcoming && hoursUntil > 24;
     const canCancel = isUpcoming && hoursUntil > 2;
 
@@ -3026,6 +3041,13 @@ function renderMyAppointments(appointments) {
         </div>
       </div>`;
   }).join('');
+
+  if (!showAll && hasMore) {
+    list.innerHTML += `
+      <button class="btn btn-ghost" style="width:100%;margin-top:12px;font-size:13px" onclick="renderMyAppointments(_myAppts, true)">
+        📋 Ver histórico completo (${sorted.length - 3} mais)
+      </button>`;
+  }
 }
 
 async function confirmPresence(id, btn) {
